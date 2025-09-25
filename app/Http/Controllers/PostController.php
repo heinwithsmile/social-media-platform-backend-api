@@ -19,8 +19,8 @@ class PostController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title' => 'required|string',
-            'content' => 'required|string',
+            'title' => 'nullable|string',
+            'content' => 'required|string|max:500',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -28,11 +28,17 @@ class PostController extends Controller
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('posts', 'public');
         }
-        $post = auth('api')->user()->posts()->create([
-            'title' => $validated['title'],
+        $postData = [
             'content' => $validated['content'],
             'image' => $imagePath,
-        ]);
+        ];
+
+        // Only add title to the data if it exists in the request
+        if (isset($validated['title']) && !empty($validated['title'])) {
+            $postData['title'] = $validated['title'];
+        }
+
+        $post = auth('api')->user()->posts()->create($postData);
 
         return response()->json([
             'post' => $post,
@@ -45,9 +51,9 @@ class PostController extends Controller
         $post = auth('api')->user()->posts()->findOrFail($id);
 
         $validated = $request->validate([
-            'title' => 'sometimes|string',
-            'content' => 'sometimes|string',
-            'image' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'title' => 'nullable|string',
+            'content' => 'required|string|max:500',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         $data = [];
